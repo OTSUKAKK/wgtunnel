@@ -56,6 +56,11 @@ jobs:
           text = text.replace("const val MIN_SDK = 26", "const val MIN_SDK = 24")
           constants.write_text(text)
 
+          app_gradle = Path("android/app/build.gradle.kts")
+          text = app_gradle.read_text()
+          text = text.replace("    debugImplementation(libs.leakcanary.android)\n", "")
+          app_gradle.write_text(text)
+
           versions = Path("core/gradle/libs.versions.toml")
           text = versions.read_text()
           text = text.replace('android-minSdk = "26"', 'android-minSdk = "24"')
