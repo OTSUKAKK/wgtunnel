@@ -8,6 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.Action
@@ -49,7 +50,9 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
         chronometerBaseMillis: Long?,
         color: Int?,
     ): Notification {
-        notificationManager.createNotificationChannel(channel.asChannel())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.createNotificationChannel(channel.asChannel())
+        }
         return channel
             .asBuilder()
             .apply {
@@ -292,8 +295,10 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
     }
 
     override fun createAllChannels() {
-        NotificationChannels.all.forEach { channel ->
-            notificationManager.createNotificationChannel(channel.asChannel())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannels.all.forEach { channel ->
+                notificationManager.createNotificationChannel(channel.asChannel())
+            }
         }
     }
 }
