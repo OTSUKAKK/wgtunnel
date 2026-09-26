@@ -14,6 +14,7 @@ import android.net.NetworkRequest
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.DEFAULT
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.LEGACY
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.ROOT
@@ -147,12 +148,12 @@ class AndroidNetworkMonitor(
                 }
             }
 
-        val flags =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                Context.RECEIVER_NOT_EXPORTED
-            } else 0
-
-        appContext.registerReceiver(receiver, IntentFilter(actionPermissionCheck), flags)
+        ContextCompat.registerReceiver(
+            appContext,
+            receiver,
+            IntentFilter(actionPermissionCheck),
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         awaitClose { appContext.unregisterReceiver(receiver) }
     }
 
@@ -176,12 +177,12 @@ class AndroidNetworkMonitor(
                 }
             }
 
-        val flags =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                Context.RECEIVER_EXPORTED
-            } else 0
-
-        appContext.registerReceiver(receiver, IntentFilter(LOCATION_SERVICES_FILTER), flags)
+        ContextCompat.registerReceiver(
+            appContext,
+            receiver,
+            IntentFilter(LOCATION_SERVICES_FILTER),
+            ContextCompat.RECEIVER_EXPORTED,
+        )
         awaitClose { appContext.unregisterReceiver(receiver) }
     }
 
@@ -207,15 +208,11 @@ class AndroidNetworkMonitor(
                 }
             }
 
-        val flags =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                Context.RECEIVER_EXPORTED
-            } else 0
-
-        appContext.registerReceiver(
+        ContextCompat.registerReceiver(
+            appContext,
             receiver,
             IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED),
-            flags,
+            ContextCompat.RECEIVER_EXPORTED,
         )
         awaitClose { appContext.unregisterReceiver(receiver) }
     }
