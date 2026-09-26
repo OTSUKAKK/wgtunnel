@@ -1,0 +1,104 @@
+name: Build WG Tunnel Android 7
+
+on:
+  push:
+    branches:
+      - android7-api24
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Android source
+        uses: actions/checkout@v5
+        with:
+          ref: android7-api24
+          path: android
+
+      - name: Checkout WG Tunnel Core 1.7.1
+        uses: actions/checkout@v5
+        with:
+          repository: wgtunnel/core
+          ref: 1.7.1
+          path: core
+          submodules: recursive
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Prepare Android SDK
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort | tail -1)"
+          fi
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-36" "ndk;28.2.13676358"
+
+      - name: Patch Android 7 API 24 compatibility
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          constants = Path("android/buildSrc/src/main/kotlin/Constants.kt")
+          text = constants.read_text()
+          text = text.replace("const val TARGET_SDK = 37", "const val TARGET_SDK = 36")
+          text = text.replace("const val MIN_SDK = 26", "const val MIN_SDK = 24")
+          constants.write_text(text)
+
+          versions = Path("core/gradle/libs.versions.toml")
+          text = versions.read_text()
+          text = text.replace('android-minSdk = "26"', 'android-minSdk = "24"')
+          text = text.replace('android-compileSdk = "37"', 'android-compileSdk = "36"')
+          versions.write_text(text)
+
+          settings = Path("android/settings.gradle.kts")
+          text = settings.read_text()
+          start = text.index('//includeBuild("../core") {')
+          end_marker = '//}\n\ninclude(":app")'
+          end = text.index(end_marker, start) + len('//}')
+          block = text[start:end]
+          uncommented = "\n".join(
+              line[2:] if line.startswith("//") else line
+              for line in block.splitlines()
+          )
+          settings.write_text(text[:start] + uncommented + text[end:])
+
+          print(constants.read_text())
+          print("\nCore SDK settings:")
+          for line in versions.read_text().splitlines():
+              if line.startswith("android-"):
+                  print(line)
+          PY
+
+      - name: Build standalone debug APK
+        working-directory: android
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleStandaloneDebug -PnoSplits --stacktrace
+
+      - name: List APKs
+        if: always()
+        shell: bash
+        run: |
+          find android/app/build/outputs/apk -type f -name "*.apk" -print 2>/dev/null || true
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wgtunnel-5.7.4-android7-api24-debug
+          path: android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
