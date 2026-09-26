@@ -2,19 +2,18 @@ package com.zaneschepke.wireguardautotunnel.notification
 
 import android.Manifest
 import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager.IMPORTANCE_LOW
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat.Action
 import androidx.core.app.NotificationCompat.Builder
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH
+import androidx.core.app.NotificationManagerCompat.IMPORTANCE_LOW
 import com.zaneschepke.wireguardautotunnel.MainActivity
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.broadcast.NotificationActionReceiver
@@ -50,9 +49,7 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
         chronometerBaseMillis: Long?,
         color: Int?,
     ): Notification {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notificationManager.createNotificationChannel(channel.asChannel())
-        }
+        notificationManager.createNotificationChannel(channel.asChannel())
         return channel
             .asBuilder()
             .apply {
@@ -269,7 +266,7 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
         }
     }
 
-    fun NotificationChannels.asChannel(): NotificationChannel {
+    fun NotificationChannels.asChannel(): NotificationChannelCompat {
         val (nameResId, descriptionResId) =
             when (this) {
                 is NotificationChannels.Tunnel.VPN ->
@@ -286,19 +283,15 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
                 NotificationChannels.App -> R.string.app to R.string.app_channel_description
             }
 
-        return NotificationChannel(
-                context.getString(channelId),
-                context.getString(nameResId),
-                importance,
-            )
-            .apply { description = context.getString(descriptionResId) }
+        return NotificationChannelCompat.Builder(context.getString(channelId), importance)
+            .setName(context.getString(nameResId))
+            .setDescription(context.getString(descriptionResId))
+            .build()
     }
 
     override fun createAllChannels() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannels.all.forEach { channel ->
-                notificationManager.createNotificationChannel(channel.asChannel())
-            }
+        NotificationChannels.all.forEach { channel ->
+            notificationManager.createNotificationChannel(channel.asChannel())
         }
     }
 }
