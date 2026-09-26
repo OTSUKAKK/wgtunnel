@@ -43,7 +43,7 @@ jobs:
           fi
           echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-36" "ndk;28.2.13676358"
+          "$SDKMANAGER" "ndk;28.2.13676358"
 
       - name: Patch Android 7 API 24 compatibility
         shell: bash
@@ -53,14 +53,12 @@ jobs:
 
           constants = Path("android/buildSrc/src/main/kotlin/Constants.kt")
           text = constants.read_text()
-          text = text.replace("const val TARGET_SDK = 37", "const val TARGET_SDK = 36")
           text = text.replace("const val MIN_SDK = 26", "const val MIN_SDK = 24")
           constants.write_text(text)
 
           versions = Path("core/gradle/libs.versions.toml")
           text = versions.read_text()
           text = text.replace('android-minSdk = "26"', 'android-minSdk = "24"')
-          text = text.replace('android-compileSdk = "37"', 'android-compileSdk = "36"')
           versions.write_text(text)
 
           settings = Path("android/settings.gradle.kts")
